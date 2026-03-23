@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: AnyNoteApi
+jwt:
+  secret: ZmFraXNkZmFrc2RmYWtzZGZha3NkZmFrc2RmYQ==
+  expiration: 604800

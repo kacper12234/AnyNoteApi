@@ -1,4 +1,4 @@
-package com.betacom.anynoteapi.user.dto;
+package com.betacom.anynoteapi.auth.dto;
 
 import java.time.Instant;
 import java.util.UUID;
