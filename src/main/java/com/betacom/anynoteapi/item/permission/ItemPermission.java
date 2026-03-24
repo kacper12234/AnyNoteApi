@@ -22,5 +22,6 @@ public class ItemPermission {
     private User user;
     @Enumerated(EnumType.STRING)
     @Getter
+    @Column(nullable = false)
     private ItemPermissionRole role;
 }

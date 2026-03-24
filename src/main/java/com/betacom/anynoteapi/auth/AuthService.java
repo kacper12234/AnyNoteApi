@@ -50,7 +50,7 @@ public class AuthService {
     }
 
     public User getCurrentUser() {
-        var username = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        var username = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByLogin(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User: " + username + " not found"));
     }

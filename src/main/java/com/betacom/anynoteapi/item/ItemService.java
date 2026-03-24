@@ -1,5 +1,6 @@
 package com.betacom.anynoteapi.item;
 
+import com.betacom.anynoteapi.audit.AuditService;
 import com.betacom.anynoteapi.auth.AuthService;
 import com.betacom.anynoteapi.exceptions.ForbiddenException;
 import com.betacom.anynoteapi.exceptions.ItemNotFoundException;
@@ -23,6 +24,7 @@ public class ItemService {
     private final ItemPermissionRepository itemPermissionRepository;
     private final ItemMapper itemMapper;
     private final AuthService authService;
+    private final AuditService auditService;
 
     public CreateItemResponse createItem(CreateItemRequest request) {
         var user = authService.getCurrentUser();
@@ -40,30 +42,41 @@ public class ItemService {
     public UpdateItemResponse updateItem(UUID id, UpdateItemRequest request) {
         Item item = itemRepository.findById(id).orElseThrow(() -> new ItemNotFoundException(id));
         User currentUser = authService.getCurrentUser();
-        if (item.getOwner().getId().equals(currentUser.getId()) || isEditor(id, currentUser.getId())) {
-            itemMapper.updateItem(request, item);
-            try {
-                return itemMapper.toUpdateResponse(itemRepository.save(item));
-            } catch (ObjectOptimisticLockingFailureException ex) {
-                throw new OldVersionException(itemRepository.getCurrentVersion(id));
-            }
+        if (!item.getOwner().getId().equals(currentUser.getId()) && !isEditor(id, currentUser.getId())) {
+            throw new ForbiddenException();
         }
-        throw new ForbiddenException();
+        itemMapper.updateItem(request, item);
+        try {
+            return itemMapper.toUpdateResponse(itemRepository.save(item));
+        } catch (ObjectOptimisticLockingFailureException ex) {
+            throw new OldVersionException(itemRepository.getCurrentVersion(id));
+        }
     }
 
     private boolean isEditor(UUID itemId, UUID userId) {
         return itemPermissionRepository.existsByItemIdAndUserIdAndRoleEquals(itemId, userId, ItemPermissionRole.EDITOR);
     }
 
+    private boolean isShared(UUID itemId, UUID userId) {
+        return itemPermissionRepository.existsByItemIdAndUserId(itemId, userId);
+    }
+
     public void deleteItem(UUID id) {
         Item item = itemRepository.findById(id).orElseThrow(() -> new ItemNotFoundException(id));
         User currentUser = authService.getCurrentUser();
-        if (item.getOwner().getId().equals(currentUser.getId())) {
-            item.markDeleted();
-            itemRepository.save(item);
-        } else {
+        if (!item.getOwner().getId().equals(currentUser.getId())) {
             throw new ForbiddenException();
         }
+        item.markDeleted();
+        itemRepository.save(item);
     }
 
+    public List<ItemHistoryResponse> getItemHistory(UUID id) {
+        Item item = itemRepository.findById(id).orElseThrow(() -> new ItemNotFoundException(id));
+        User currentUser = authService.getCurrentUser();
+        if (!item.getOwner().getId().equals(currentUser.getId()) && !isShared(id, authService.getCurrentUser().getId())) {
+            throw new ForbiddenException();
+        }
+        return auditService.getHistory(Item.class, id).stream().map(itemMapper::toDto).toList();
+    }
 }

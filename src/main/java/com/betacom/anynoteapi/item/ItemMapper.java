@@ -1,5 +1,6 @@
 package com.betacom.anynoteapi.item;
 
+import com.betacom.anynoteapi.audit.AuditEntry;
 import com.betacom.anynoteapi.item.dto.*;
 import com.betacom.anynoteapi.item.permission.ItemPermission;
 import com.betacom.anynoteapi.item.permission.ItemPermissionRole;
@@ -37,4 +38,6 @@ public interface ItemMapper {
 
     UpdateItemResponse toUpdateResponse(Item item);
 
+    @Mapping(target = ".", source = "entity")
+    ItemHistoryResponse toDto(AuditEntry<Item> entry);
 }

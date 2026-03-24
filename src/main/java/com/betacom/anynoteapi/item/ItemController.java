@@ -38,4 +38,9 @@ public class ItemController {
         itemService.deleteItem(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping(value = "{id}/history")
+    public ResponseEntity<List<ItemHistoryResponse>> getItemHistory(@PathVariable UUID id) {
+        return ResponseEntity.ok(itemService.getItemHistory(id));
+    }
 }
