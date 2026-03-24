@@ -1,6 +1,10 @@
 spring:
   application:
     name: AnyNoteApi
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
 jwt:
   secret: ZmFraXNkZmFrc2RmYWtzZGZha3NkZmFrc2RmYQ==
   expiration: 604800

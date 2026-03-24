@@ -10,6 +10,8 @@ import com.betacom.anynoteapi.security.JwtService;
 import com.betacom.anynoteapi.user.User;
 import com.betacom.anynoteapi.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -46,5 +48,12 @@ public class AuthService {
 
         return new LoginResponse(jwtService.generateToken(user.getLogin()), jwtService.getExpiration());
     }
+
+    public User getCurrentUser() {
+        var username = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        return userRepository.findByLogin(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User: " + username + " not found"));
+    }
+
 
 }
