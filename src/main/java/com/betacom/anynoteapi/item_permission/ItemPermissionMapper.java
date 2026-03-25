@@ -8,10 +8,10 @@ import org.mapstruct.*;
 
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, componentModel = MappingConstants.ComponentModel.SPRING)
 public interface ItemPermissionMapper {
-    @Mapping(source = "userId", target = "user.id")
     ItemPermission toItemPermission(ItemPermissionRequest itemPermissionRequest, Item item, User user);
 
-    @InheritInverseConfiguration(name = "toEntity")
+    @Mapping(target = "itemId", source = "item.id")
+    @Mapping(target = "userId", source = "user.id")
     ItemPermissionResponse toPermissionResponse(ItemPermission itemPermission);
 
 }
