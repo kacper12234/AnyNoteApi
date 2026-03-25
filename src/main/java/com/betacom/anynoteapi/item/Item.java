@@ -1,8 +1,9 @@
 package com.betacom.anynoteapi.item;
 
-import com.betacom.anynoteapi.item.permission.ItemPermission;
+import com.betacom.anynoteapi.item_permission.ItemPermission;
 import com.betacom.anynoteapi.user.User;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.SQLRestriction;
@@ -24,6 +25,7 @@ public class Item {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Setter(AccessLevel.NONE)
     private UUID id;
     @ManyToOne
     @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)

@@ -6,8 +6,8 @@ import com.betacom.anynoteapi.exceptions.ForbiddenException;
 import com.betacom.anynoteapi.exceptions.ItemNotFoundException;
 import com.betacom.anynoteapi.exceptions.OldVersionException;
 import com.betacom.anynoteapi.item.dto.*;
-import com.betacom.anynoteapi.item.permission.ItemPermissionRepository;
-import com.betacom.anynoteapi.item.permission.ItemPermissionRole;
+import com.betacom.anynoteapi.item_permission.ItemPermissionRepository;
+import com.betacom.anynoteapi.item_permission.ItemPermissionRole;
 import com.betacom.anynoteapi.user.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -26,20 +26,20 @@ public class ItemService {
     private final AuthService authService;
     private final AuditService auditService;
 
-    public CreateItemResponse createItem(CreateItemRequest request) {
+    CreateItemResponse createItem(CreateItemRequest request) {
         var user = authService.getCurrentUser();
         var item = itemMapper.toItem(request, user);
         var saved = itemRepository.save(item);
-        return itemMapper.toDto(saved);
+        return itemMapper.toCreateItemResponse(saved);
     }
 
-    public List<ItemResponse> getAllUserItems() {
+    List<ItemResponse> getAllUserItems() {
         return this.itemRepository.findAllAvailableItemsForUser(authService.getCurrentUser()).stream()
-                .map(itemMapper::toResponse)
+                .map(itemMapper::toItemResponse)
                 .toList();
     }
 
-    public UpdateItemResponse updateItem(UUID id, UpdateItemRequest request) {
+    UpdateItemResponse updateItem(UUID id, UpdateItemRequest request) {
         Item item = itemRepository.findById(id).orElseThrow(() -> new ItemNotFoundException(id));
         User currentUser = authService.getCurrentUser();
         if (!item.getOwner().getId().equals(currentUser.getId()) && !isEditor(id, currentUser.getId())) {
@@ -61,7 +61,7 @@ public class ItemService {
         return itemPermissionRepository.existsByItemIdAndUserId(itemId, userId);
     }
 
-    public void deleteItem(UUID id) {
+    void deleteItem(UUID id) {
         Item item = itemRepository.findById(id).orElseThrow(() -> new ItemNotFoundException(id));
         User currentUser = authService.getCurrentUser();
         if (!item.getOwner().getId().equals(currentUser.getId())) {
@@ -71,12 +71,12 @@ public class ItemService {
         itemRepository.save(item);
     }
 
-    public List<ItemHistoryResponse> getItemHistory(UUID id) {
+    List<ItemHistoryResponse> getItemHistory(UUID id) {
         Item item = itemRepository.findById(id).orElseThrow(() -> new ItemNotFoundException(id));
         User currentUser = authService.getCurrentUser();
         if (!item.getOwner().getId().equals(currentUser.getId()) && !isShared(id, authService.getCurrentUser().getId())) {
             throw new ForbiddenException();
         }
-        return auditService.getHistory(Item.class, id).stream().map(itemMapper::toDto).toList();
+        return auditService.getHistory(Item.class, id).stream().map(itemMapper::toCreateItemResponse).toList();
     }
 }

@@ -2,8 +2,8 @@ package com.betacom.anynoteapi.item;
 
 import com.betacom.anynoteapi.audit.AuditEntry;
 import com.betacom.anynoteapi.item.dto.*;
-import com.betacom.anynoteapi.item.permission.ItemPermission;
-import com.betacom.anynoteapi.item.permission.ItemPermissionRole;
+import com.betacom.anynoteapi.item_permission.ItemPermission;
+import com.betacom.anynoteapi.item_permission.ItemPermissionRole;
 import com.betacom.anynoteapi.user.User;
 import org.mapstruct.*;
 
@@ -14,18 +14,17 @@ import java.util.List;
         imports = Instant.class)
 public interface ItemMapper {
 
-    @Mapping(target = "id", ignore = true)
     @Mapping(target = "owner", source = "user")
     @Mapping(target = "createdAt", expression = "java(Instant.now())")
     @Mapping(target = "updatedAt", expression = "java(Instant.now())")
     Item toItem(CreateItemRequest createItemRequest, User user);
 
     @Mapping(source = "owner.id", target = "ownerId")
-    CreateItemResponse toDto(Item item);
+    CreateItemResponse toCreateItemResponse(Item item);
 
     @Mapping(source = "owner.id", target = "ownerId")
     @Mapping(source = "permissions", target = "myRole", qualifiedByName = "getRole")
-    ItemResponse toResponse(Item item);
+    ItemResponse toItemResponse(Item item);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "updatedAt", expression = "java(Instant.now())")
@@ -39,5 +38,5 @@ public interface ItemMapper {
     UpdateItemResponse toUpdateResponse(Item item);
 
     @Mapping(target = ".", source = "entity")
-    ItemHistoryResponse toDto(AuditEntry<Item> entry);
+    ItemHistoryResponse toCreateItemResponse(AuditEntry<Item> entry);
 }

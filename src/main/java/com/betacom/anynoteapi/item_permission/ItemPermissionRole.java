@@ -1,4 +1,4 @@
-package com.betacom.anynoteapi.item.permission;
+package com.betacom.anynoteapi.item_permission;
 
 public enum ItemPermissionRole {
 

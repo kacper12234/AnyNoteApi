@@ -25,7 +25,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public RegisterResponse register(RegisterRequest request) {
+    RegisterResponse register(RegisterRequest request) {
         if (userRepository.existsByLogin(request.login())) {
             throw new UserExistsException(request.login());
         }
@@ -39,7 +39,7 @@ public class AuthService {
         return new RegisterResponse(saved.getId(), saved.getLogin(), saved.getCreatedAt());
     }
 
-    public LoginResponse login(LoginRequest request) {
+    LoginResponse login(LoginRequest request) {
         User user = userRepository.findByLogin(request.login()).orElseThrow(UnauthorizedException::new);
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {

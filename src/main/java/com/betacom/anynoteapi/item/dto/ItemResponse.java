@@ -1,6 +1,6 @@
 package com.betacom.anynoteapi.item.dto;
 
-import com.betacom.anynoteapi.item.permission.ItemPermissionRole;
+import com.betacom.anynoteapi.item_permission.ItemPermissionRole;
 
 import java.io.Serializable;
 import java.time.Instant;

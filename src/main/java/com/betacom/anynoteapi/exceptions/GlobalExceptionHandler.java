@@ -18,7 +18,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
     }
 
-    @ExceptionHandler({ItemNotFoundException.class})
+    @ExceptionHandler({ItemNotFoundException.class, UserNotFoundException.class, PermissionNotFoundException.class})
     public ResponseEntity<String> handleNotFound(RuntimeException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
     }
