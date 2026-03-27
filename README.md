@@ -36,11 +36,11 @@ Bandwidth throttling is implemented using a Spring filter because it runs before
 
 Limits are defined in application.properties, e.g.:
 
-rate-limit:
-  rules:
-    - path: /login
-      capacity: 5
-      duration: 60
+rate-limit: </br>
+&emsp;rules: </br>
+&emsp;&emsp;- path: /login </br>
+&emsp;&emsp;capacity: 5 </br>
+&emsp;&emsp;duration: 60
 
 I created small abstraction layer wraps Envers queries to avoid leaking Envers API into business logic, change implementation later, map results into DTOs, improve readability and testability.
 
