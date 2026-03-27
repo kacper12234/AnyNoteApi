@@ -37,7 +37,7 @@ public class SecurityConfig {
                             response.getWriter().write("""
                                         {
                                           "error": "Unauthorized",
-                                          "message": "Missing or invalid JWT token"
+                                          "message": "Missing JWT token"
                                         }
                                     """);
                         })

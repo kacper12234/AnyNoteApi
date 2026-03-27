@@ -1,5 +1,6 @@
 package com.betacom.anynoteapi.security;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,10 +30,25 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         String token = header.substring(7);
-        String login = jwtService.extractLogin(token);
 
-        var auth = new UsernamePasswordAuthenticationToken(login, null, List.of());
-        SecurityContextHolder.getContext().setAuthentication(auth);
+        try {
+            String login = jwtService.extractLogin(token);
+
+            var auth = new UsernamePasswordAuthenticationToken(login, null, List.of());
+            SecurityContextHolder.getContext().setAuthentication(auth);
+        } catch (JwtException ex) {
+            SecurityContextHolder.clearContext();
+
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("""
+                        {
+                          "error": "Unauthorized",
+                          "message": "Invalid or expired JWT token"
+                        }
+                    """);
+            return;
+        }
 
         filterChain.doFilter(request, response);
     }
