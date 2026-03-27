@@ -8,5 +8,5 @@ import java.io.Serializable;
 /**
  * DTO for {@link Item}
  */
-public record UpdateItemRequest(String title, String content, @NotNull Long version) implements Serializable {
+public record UpdateItemRequest(String title, String content, @NotNull Integer version) implements Serializable {
 }

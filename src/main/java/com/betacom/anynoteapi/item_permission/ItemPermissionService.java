@@ -1,14 +1,11 @@
 package com.betacom.anynoteapi.item_permission;
 
-import com.betacom.anynoteapi.auth.AuthService;
-import com.betacom.anynoteapi.exceptions.ForbiddenException;
-import com.betacom.anynoteapi.exceptions.ItemNotFoundException;
-import com.betacom.anynoteapi.exceptions.PermissionNotFoundException;
-import com.betacom.anynoteapi.exceptions.UserNotFoundException;
+import com.betacom.anynoteapi.exceptions.*;
+import com.betacom.anynoteapi.item.ItemAccessService;
 import com.betacom.anynoteapi.item.ItemRepository;
 import com.betacom.anynoteapi.item_permission.dto.ItemPermissionRequest;
 import com.betacom.anynoteapi.item_permission.dto.ItemPermissionResponse;
-import com.betacom.anynoteapi.user.UserRepository;
+import com.betacom.anynoteapi.user.UserProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,20 +16,22 @@ import java.util.UUID;
 public class ItemPermissionService {
 
     private final ItemRepository itemRepository;
+    private final ItemAccessService itemAccessService;
     private final ItemPermissionRepository itemPermissionRepository;
     private final ItemPermissionMapper itemPermissionMapper;
-    private final AuthService authService;
-    private final UserRepository userRepository;
+    private final UserProvider userProvider;
 
     record PermissionGrant(boolean updatedExisting, ItemPermissionResponse permission) {
     }
 
     PermissionGrant shareItem(UUID itemId, ItemPermissionRequest request) {
-        var user = userRepository.findById(request.userId()).orElseThrow(() -> new UserNotFoundException(request.userId()));
-        var item = itemRepository.findById(itemId).orElseThrow(() -> new ItemNotFoundException(itemId));
-        if (!item.getOwner().getId().equals(authService.getCurrentUser().getId())) {
-            throw new ForbiddenException();
+        var currentUserId = userProvider.getCurrentUser().getId();
+        if (request.userId().equals(currentUserId)) {
+            throw new SelfPermissionAssignmentException();
         }
+        var item = itemRepository.findById(itemId).orElseThrow(() -> new ItemNotFoundException(itemId));
+        itemAccessService.assertOwner(item, currentUserId);
+        var user = userProvider.getUser(request.userId());
         var permissionOptional = itemPermissionRepository.findByItemIdAndUserId(itemId, request.userId());
         permissionOptional.ifPresent(p -> p.setRole(request.role()));
         var permission = permissionOptional.orElse(itemPermissionMapper.toItemPermission(request, item, user));
@@ -43,13 +42,9 @@ public class ItemPermissionService {
     }
 
     void deleteItemPermission(UUID itemId, UUID userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new UserNotFoundException(userId);
-        }
+        this.userProvider.assertUserExists(userId);
         var item = itemRepository.findById(itemId).orElseThrow(() -> new ItemNotFoundException(itemId));
-        if (!item.getOwner().getId().equals(authService.getCurrentUser().getId())) {
-            throw new ForbiddenException();
-        }
+        itemAccessService.assertOwner(item, userProvider.getCurrentUser().getId());
         ItemPermission permission = itemPermissionRepository
                 .findByItemIdAndUserId(itemId, userId)
                 .orElseThrow(() -> new PermissionNotFoundException(userId, itemId));

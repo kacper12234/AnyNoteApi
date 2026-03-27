@@ -33,9 +33,10 @@ public class Item {
     private User owner;
     private String title;
     @Lob
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(columnDefinition = "TEXT")
     private String content;
     @Version
+    @Setter(AccessLevel.NONE)
     private Integer version;
     private Boolean deleted = false;
     @Column(name = "created_at", nullable = false, updatable = false)

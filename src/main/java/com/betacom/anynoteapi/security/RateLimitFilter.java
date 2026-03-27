@@ -9,6 +9,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -29,7 +30,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         var optionalRule = properties.rules().stream()
-                .filter(rule -> request.getRequestURI().startsWith(rule.path()))
+                .filter(rule -> PathPatternRequestMatcher.withDefaults().matcher(rule.path()).matches(request))
                 .findFirst();
         if (optionalRule.isPresent()) {
             applyRateLimit(optionalRule.get(), request, response, filterChain);
@@ -50,8 +51,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } else {
             long numberOfSecondsToRefill = TimeUnit.NANOSECONDS.toSeconds(probe.getNanosToWaitForRefill());
-            response.sendError(429, "Rate limit exceeded");
+            response.setStatus(429);
             response.setHeader("Retry-After", String.valueOf(numberOfSecondsToRefill));
+            response.getWriter().write("""
+                        {
+                            "error": "Too Many Requests",
+                            "message": "You have exceeded the rate limit. Please try again later."
+                        }
+                    """);
         }
     }
 

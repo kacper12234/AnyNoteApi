@@ -11,7 +11,7 @@ public interface ItemRepository extends CrudRepository<Item, UUID> {
 
     @Query("SELECT i FROM Item i " +
             "LEFT JOIN i.permissions p with p.user = :user " +
-            "WHERE i.owner =: user OR p IS NOT NULL")
+            "WHERE i.owner =: user OR p.user = :user")
     List<Item> findAllAvailableItemsForUser(User user);
 
     @Query("SELECT i.version FROM Item i WHERE i.id = :id")

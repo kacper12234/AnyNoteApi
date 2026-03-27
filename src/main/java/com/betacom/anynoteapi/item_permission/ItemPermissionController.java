@@ -2,6 +2,7 @@ package com.betacom.anynoteapi.item_permission;
 
 import com.betacom.anynoteapi.item_permission.dto.ItemPermissionRequest;
 import com.betacom.anynoteapi.item_permission.dto.ItemPermissionResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +19,7 @@ public class ItemPermissionController {
 
     @PostMapping
     public ResponseEntity<ItemPermissionResponse> shareItem(@PathVariable("itemId") UUID itemId,
-                                                            @RequestBody ItemPermissionRequest request) {
+                                                            @RequestBody @Valid ItemPermissionRequest request) {
         var grant = itemPermissionService.shareItem(itemId, request);
         var httpStatus = grant.updatedExisting() ? HttpStatus.OK : HttpStatus.CREATED;
         return ResponseEntity.status(httpStatus).body(grant.permission());
