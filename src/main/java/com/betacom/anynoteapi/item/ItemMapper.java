@@ -28,7 +28,7 @@ public interface ItemMapper {
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "updatedAt", expression = "java(Instant.now())")
-    void updateItem(UpdateItemRequest dto, @MappingTarget Item entity);
+    void patchItemFromRequest(UpdateItemRequest dto, @MappingTarget Item entity);
 
     @Named("getRole")
     default ItemPermissionRole getRole(List<ItemPermission> permissions) {
@@ -38,5 +38,5 @@ public interface ItemMapper {
     UpdateItemResponse toUpdateResponse(Item item);
 
     @Mapping(target = ".", source = "entity")
-    ItemHistoryResponse toCreateItemResponse(AuditEntry<Item> entry);
+    ItemHistoryResponse toHistoryResponse(AuditEntry<Item> entry);
 }

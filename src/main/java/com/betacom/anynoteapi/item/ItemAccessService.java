@@ -14,15 +14,15 @@ public class ItemAccessService {
 
     private final ItemPermissionRepository itemPermissionRepository;
 
-    public void assertOwner(Item item, UUID userId) {
+    public void requireOwner(Item item, UUID userId) {
         assertHasAccess(isOwner(item, userId));
     }
 
-    public void assertOwnerOrEditor(Item item, UUID userId) {
+    public void requireEditAccess(Item item, UUID userId) {
         assertHasAccess(isOwner(item, userId) || isEditor(item.getId(), userId));
     }
 
-    public void assertOwnerOrShared(Item item, UUID userId) {
+    public void requireViewAccess(Item item, UUID userId) {
         assertHasAccess(isOwner(item, userId) || hasAnyPermission(item.getId(), userId));
     }
 

@@ -30,7 +30,7 @@ public class ItemPermissionService {
             throw new SelfPermissionAssignmentException();
         }
         var item = itemRepository.findById(itemId).orElseThrow(() -> new ItemNotFoundException(itemId));
-        itemAccessService.assertOwner(item, currentUserId);
+        itemAccessService.requireOwner(item, currentUserId);
         var user = userProvider.getUser(request.userId());
         var permissionOptional = itemPermissionRepository.findByItemIdAndUserId(itemId, request.userId());
         permissionOptional.ifPresent(p -> p.setRole(request.role()));
@@ -44,7 +44,7 @@ public class ItemPermissionService {
     void deleteItemPermission(UUID itemId, UUID userId) {
         this.userProvider.assertUserExists(userId);
         var item = itemRepository.findById(itemId).orElseThrow(() -> new ItemNotFoundException(itemId));
-        itemAccessService.assertOwner(item, userProvider.getCurrentUser().getId());
+        itemAccessService.requireOwner(item, userProvider.getCurrentUser().getId());
         ItemPermission permission = itemPermissionRepository
                 .findByItemIdAndUserId(itemId, userId)
                 .orElseThrow(() -> new PermissionNotFoundException(userId, itemId));

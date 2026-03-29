@@ -38,12 +38,13 @@ public class ItemService {
 
     UpdateItemResponse updateItem(UUID id, UpdateItemRequest request) {
         Item item = itemRepository.findById(id).orElseThrow(() -> new ItemNotFoundException(id));
+        User currentUser = userProvider.getCurrentUser();
+        itemAccessService.requireEditAccess(item, currentUser.getId());
         if (!request.version().equals(item.getVersion())) {
             throw new WrongVersionException(item.getVersion());
         }
-        User currentUser = userProvider.getCurrentUser();
-        itemAccessService.assertOwnerOrEditor(item, currentUser.getId());
-        itemMapper.updateItem(request, item);
+        itemAccessService.requireEditAccess(item, currentUser.getId());
+        itemMapper.patchItemFromRequest(request, item);
         try {
             return itemMapper.toUpdateResponse(itemRepository.save(item));
         } catch (ObjectOptimisticLockingFailureException ex) {
@@ -54,7 +55,7 @@ public class ItemService {
     void deleteItem(UUID id) {
         Item item = itemRepository.findById(id).orElseThrow(() -> new ItemNotFoundException(id));
         User currentUser = userProvider.getCurrentUser();
-        itemAccessService.assertOwner(item, currentUser.getId());
+        itemAccessService.requireOwner(item, currentUser.getId());
         item.markDeleted();
         itemRepository.save(item);
     }
@@ -62,8 +63,8 @@ public class ItemService {
     List<ItemHistoryResponse> getItemHistory(UUID id) {
         Item item = itemRepository.findById(id).orElseThrow(() -> new ItemNotFoundException(id));
         User currentUser = userProvider.getCurrentUser();
-        itemAccessService.assertOwnerOrShared(item, currentUser.getId());
-        return auditService.getHistory(Item.class, id).stream().map(itemMapper::toCreateItemResponse).toList();
+        itemAccessService.requireViewAccess(item, currentUser.getId());
+        return auditService.getHistory(Item.class, id).stream().map(itemMapper::toHistoryResponse).toList();
     }
 
 }
