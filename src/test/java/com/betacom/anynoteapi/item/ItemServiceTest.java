@@ -65,7 +65,6 @@ class ItemServiceTest {
         when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
         when(userProvider.getCurrentUser()).thenReturn(user);
 
-
         itemService.updateItem(itemId, new UpdateItemRequest("test","test",1));
 
         verify(itemRepository).save(item);
@@ -75,7 +74,6 @@ class ItemServiceTest {
     @Test
     void shouldAllowUpdate_whenUserIsEditor() {
         UUID userId = UUID.randomUUID();
-
 
         var user = mock(User.class);
         when(user.getId()).thenReturn(userId);
@@ -101,7 +99,6 @@ class ItemServiceTest {
 
     @Test
     void shouldNotAllowUpdate_whenUserIsNotOwnerAndNotEditor() {
-
         UUID userId = UUID.randomUUID();
 
         var user = mock(User.class);
@@ -112,7 +109,6 @@ class ItemServiceTest {
 
         var item = mock(Item.class);
         when(item.getOwner()).thenReturn(owner);
-        when(item.getVersion()).thenReturn(1);
 
         when(itemRepository.findById(any())).thenReturn(Optional.of(item));
         when(userProvider.getCurrentUser()).thenReturn(user);
@@ -125,13 +121,18 @@ class ItemServiceTest {
     }
 
     @Test
-    void shouldThrowOldVersionException() {
+    void shouldThrowWrongVersionException_whenVersionInRequestAndEntityDiffers() {
         UUID itemId = UUID.randomUUID();
 
+        User owner = mock(User.class);
+        when(owner.getId()).thenReturn(UUID.randomUUID());
+
         var item = mock(Item.class);
+        when(item.getOwner()).thenReturn(owner);
         when(item.getVersion()).thenReturn(5);
 
         when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
+        when(userProvider.getCurrentUser()).thenReturn(owner);
 
         WrongVersionException ex = assertThrows(WrongVersionException.class,
                 () -> itemService.updateItem(itemId, new UpdateItemRequest("t", "t", 4)));
@@ -140,16 +141,15 @@ class ItemServiceTest {
     }
 
     @Test
-    void shouldThrowOldVersionException_whenOptimisticLockFails() {
+    void shouldThrowWrongVersionException_whenOptimisticLockFails() {
         UUID itemId = UUID.randomUUID();
 
         User owner = mock(User.class);
+        when(owner.getId()).thenReturn(UUID.randomUUID());
+
         var item = mock(Item.class);
         when(item.getOwner()).thenReturn(owner);
         when(item.getVersion()).thenReturn(4);
-
-        when(owner.getId()).thenReturn(UUID.randomUUID());
-        when(item.getOwner()).thenReturn(owner);
 
         when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
         when(userProvider.getCurrentUser()).thenReturn(owner);
