@@ -30,6 +30,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         var optionalRule = properties.rules().stream()
+                .sorted((r1, r2) -> r2.path().length() - r1.path().length())
                 .filter(rule -> PathPatternRequestMatcher.withDefaults().matcher(rule.path()).matches(request))
                 .findFirst();
         if (optionalRule.isPresent()) {
