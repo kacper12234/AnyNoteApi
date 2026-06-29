@@ -32,6 +32,9 @@ public class JwtFilter extends OncePerRequestFilter {
         String token = header.substring(7);
 
         try {
+            if (jwtService.isRefreshToken(token)) {
+                throw new JwtException("Invalid token type");
+            }
             String login = jwtService.extractLogin(token);
 
             var auth = new UsernamePasswordAuthenticationToken(login, null, List.of());

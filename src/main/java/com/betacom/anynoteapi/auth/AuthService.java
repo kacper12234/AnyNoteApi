@@ -1,15 +1,17 @@
 package com.betacom.anynoteapi.auth;
 
 import com.betacom.anynoteapi.auth.dto.LoginRequest;
-import com.betacom.anynoteapi.auth.dto.LoginResponse;
+import com.betacom.anynoteapi.auth.dto.AuthResponse;
 import com.betacom.anynoteapi.auth.dto.RegisterRequest;
 import com.betacom.anynoteapi.auth.dto.RegisterResponse;
+import com.betacom.anynoteapi.exceptions.InvalidTokenTypeException;
 import com.betacom.anynoteapi.exceptions.UnauthorizedException;
 import com.betacom.anynoteapi.exceptions.UserExistsException;
 import com.betacom.anynoteapi.security.JwtService;
 import com.betacom.anynoteapi.user.User;
 import com.betacom.anynoteapi.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -37,14 +39,31 @@ class AuthService {
         return new RegisterResponse(saved.getId(), saved.getLogin(), saved.getCreatedAt());
     }
 
-    LoginResponse login(LoginRequest request) {
+    AuthResponse login(LoginRequest request) {
         User user = userRepository.findByLogin(request.login()).orElseThrow(UnauthorizedException::new);
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new UnauthorizedException();
         }
 
-        return new LoginResponse(jwtService.generateToken(user.getLogin()), jwtService.getExpiration());
+        return new AuthResponse(jwtService.generateAccessToken(user.getLogin()), jwtService.getAccessExpiration());
     }
 
+    AuthResponse refreshToken(String refreshToken) {
+        if (!jwtService.isRefreshToken(refreshToken)) {
+            throw new InvalidTokenTypeException();
+        }
+        String login = jwtService.extractLogin(refreshToken);
+        return new AuthResponse(jwtService.generateAccessToken(login), jwtService.getAccessExpiration());
+    }
+
+    String generateRefreshToken(String token) {
+        String login = jwtService.extractLogin(token);
+        return ResponseCookie.from("refreshToken", jwtService.generateRefreshToken(login))
+                .httpOnly(true)
+                .path("/")
+                .sameSite("Lax")
+                .build()
+                .toString();
+    }
 }

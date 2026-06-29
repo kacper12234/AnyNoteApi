@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.UUID;
@@ -42,5 +43,10 @@ public class ItemController {
     @GetMapping(value = "{id}/history")
     public ResponseEntity<List<ItemHistoryResponse>> getItemHistory(@PathVariable UUID id) {
         return ResponseEntity.ok(itemService.getItemHistory(id));
+    }
+
+    @GetMapping(value = "subscribe")
+    public ResponseEntity<SseEmitter> subscribe() {
+        return ResponseEntity.ok(itemService.subscribe());
     }
 }

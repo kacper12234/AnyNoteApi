@@ -7,12 +7,19 @@ import com.betacom.anynoteapi.item.dto.*;
 import com.betacom.anynoteapi.user.UserProvider;
 import com.betacom.anynoteapi.user.User;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ItemService {
@@ -22,6 +29,8 @@ public class ItemService {
     private final ItemMapper itemMapper;
     private final UserProvider userProvider;
     private final AuditService auditService;
+
+    private final Map<UUID, Set<SseEmitter>> emitters = new ConcurrentHashMap<>();
 
     CreateItemResponse createItem(CreateItemRequest request) {
         var user = userProvider.getCurrentUser();
@@ -46,9 +55,35 @@ public class ItemService {
         itemAccessService.requireEditAccess(item, currentUser.getId());
         itemMapper.patchItemFromRequest(request, item);
         try {
-            return itemMapper.toUpdateResponse(itemRepository.save(item));
+            var response = itemMapper.toUpdateResponse(itemRepository.save(item));
+            item.getPermissions().forEach(p -> publishUpdate(p.getUser().getId(), response));
+            return response;
         } catch (ObjectOptimisticLockingFailureException ex) {
             throw new WrongVersionException(itemRepository.getCurrentVersion(id));
+        }
+    }
+
+    private void publishUpdate(UUID userId, UpdateItemResponse response) {
+        emitters.getOrDefault(userId, Set.of())
+                .forEach(emitter -> sendUpdate(emitter, userId, response));
+    }
+
+    private void sendUpdate(SseEmitter emitter, UUID userId, UpdateItemResponse response) {
+        try {
+            emitter.send(SseEmitter.event().data(response));
+        } catch (IOException e) {
+            log.error("Error sending SSE event", e);
+            remove(userId, emitter);
+        }
+    }
+
+    private void remove(UUID userId, SseEmitter emitter) {
+        Set<SseEmitter> set = emitters.get(userId);
+        if (set != null) {
+            set.remove(emitter);
+            if (set.isEmpty()) {
+                emitters.remove(userId);
+            }
         }
     }
 
@@ -65,6 +100,22 @@ public class ItemService {
         User currentUser = userProvider.getCurrentUser();
         itemAccessService.requireViewAccess(item, currentUser.getId());
         return auditService.getHistory(Item.class, id).stream().map(itemMapper::toHistoryResponse).toList();
+    }
+
+    public SseEmitter subscribe() {
+        var userId = userProvider.getCurrentUser().getId();
+        var emitter = new SseEmitter(0L);
+
+        emitters.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet())
+                .add(emitter);
+
+        Runnable cleanup = () -> remove(userId, emitter);
+
+        emitter.onCompletion(cleanup);
+        emitter.onTimeout(cleanup);
+        emitter.onError(e -> cleanup.run());
+
+        return emitter;
     }
 
 }
